@@ -4,7 +4,10 @@ import threading
 import sys
 
 MSGLEN = 1024
-
+IP1 = ""
+HOSTNAME = socket.gethostname()
+NODES = {PC1 : "", PC2 : "", PC3 : ""}
+NODES.pop(HOSTNAME, -1)
 class ClientSocket:
     def __init__(self, sock=None):
         if sock is None:
@@ -49,7 +52,7 @@ class ClientSocket:
         return "".join(chunks)
 
 class ServerSocket:
-    def __init__(self, sock=None, host="127.0.0.1", port=65432):
+    def __init__(self, sock=None, host='', port=65432):
         if sock is None:
             try:
                 self.sock = socket.socket(
@@ -59,7 +62,7 @@ class ServerSocket:
         else:
             self.sock = sock
 
-        self.sock.bind(("127.0.0.1", 65432))
+        self.sock.bind(('', 65432))
         self.sock.listen(5)
     
     def accept(self):
@@ -98,54 +101,38 @@ def miserver(servidor):
 
 if __name__ == "__main__":
 
-    '''
-    print("1) Servidor\n2) Enviar mensaje")
-    option = input()
-    option = int(option)
-
-    if option == 1:
-        servidor = ServerSocket()
-        servidor.accept()
-        mensaje = servidor.receive()
-        print(f"Mensaje recibido {mensaje}")
-        servidor.send(mensaje)
-    elif option == 2:
-        cliente = ClientSocket()
-        if  cliente.conect("127.0.0.1", 65432):
-            mensaje = input("Ingrese un mensaje: ")
-            hora = time.time()
-            hora = time.ctime(hora)
-            cliente.send(mensaje + f" [{hora}]")
-            respuesta = cliente.receive()
-            print(f"Mensaje recivido como respuesta: {respuesta}")
-        else:
-            print("Fin del programa")
-    '''
-
     #Server thread
-    '''
     servidor = ServerSocket()
     t1 = threading.Thread(target=miserver, args=(servidor,))
     t1.start()
-    '''
 
-    print("1) Servidor\n2) Enviar mensaje")
-    option = input()
-    option = int(option)
 
-    if option == 1:
-        servidor = ServerSocket()
-        t1 = threading.Thread(target=miserver, args=(servidor,))
-        t1.start()
-        t1.join()
-    if option == 2:
+    while True:
+        i = 1
+        print("Enviar mensaje a:")
+        for j in NODES:
+            print(f"{i}) {j}\n")
+            i = i + 1
+        
+        while True:
+            try:
+                option = int(input("Ingrese una opcion: "))
+                if option > len(NODES):
+                    print("Valor fuera de rango")
+                else:
+                    break
+            except ValueError:
+                option = print("Ingrese solo un entero")
+
         cliente = ClientSocket()
-        if  cliente.conect("127.0.0.1", 65432):
-            mensaje = input("Ingrese un mensaje: ")
+        if cliente.conect(NODES[option], 65432):
+            mensaje = input("Ingrese el mensaje: ")
             hora = time.time()
             hora = time.ctime(hora)
-            cliente.send(mensaje + f" [{hora}]")
+            cliente.send(f"[{hora}] " + mensaje)
             respuesta = cliente.receive()
-            print(f"Mensaje recivido como respuesta: {respuesta}")
+            print(f"La respuesta fue: {respuesta}")
         else:
-            print("Fin del programa")
+            print("No se logro conectar con el host")
+
+    t1.join()
