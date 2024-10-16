@@ -6,7 +6,7 @@ import sys
 MSGLEN = 1024
 IP1 = ""
 HOSTNAME = socket.gethostname()
-NODES = {PC1 : "", PC2 : "", PC3 : ""}
+NODES = {"pc1" : "", "pc2" : "", "pc3" : ""}
 NODES.pop(HOSTNAME, -1)
 class ClientSocket:
     def __init__(self, sock=None):
@@ -91,27 +91,28 @@ class ServerSocket:
             bytes_recd = bytes_recd + len(chunk)
         return "".join(chunks)
 
-def miserver(servidor):
+def miserver():
+    register = open("register.txt", "a+")
+
+    servidor = ServerSocket()
     while True:
         servidor.accept()
         mensaje = servidor.receive()
-        print(f"Mensaje recibido {mensaje}")
-        servidor.send(mensaje)
+        register.write(f"{mensaje}")
+        servidor.send("Ok")
     
 
 if __name__ == "__main__":
 
     #Server thread
-    servidor = ServerSocket()
-    t1 = threading.Thread(target=miserver, args=(servidor,))
+    t1 = threading.Thread(target=miserver)
     t1.start()
-
 
     while True:
         i = 1
         print("Enviar mensaje a:")
         for j in NODES:
-            print(f"{i}) {j}\n")
+            print(f"{i}) {j}")
             i = i + 1
         
         while True:
@@ -122,10 +123,10 @@ if __name__ == "__main__":
                 else:
                     break
             except ValueError:
-                option = print("Ingrese solo un entero")
+                option = print("Ingrese una opcioin valida")
 
         cliente = ClientSocket()
-        if cliente.conect(NODES[option], 65432):
+        if cliente.conect(NODES[list(NODES.keys())[option-1]], 65432):
             mensaje = input("Ingrese el mensaje: ")
             hora = time.time()
             hora = time.ctime(hora)
@@ -136,3 +137,4 @@ if __name__ == "__main__":
             print("No se logro conectar con el host")
 
     t1.join()
+    register.close()
