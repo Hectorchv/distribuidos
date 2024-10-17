@@ -6,7 +6,7 @@ import sys
 MSGLEN = 1024
 IP1 = ""
 HOSTNAME = socket.gethostname()
-NODES = {"pc1" : "", "pc2" : "", "pc3" : ""}
+NODES = {"arch" : "192.168.1.74", "arch-lap" : "192.168.1.69", "pc3" : "192.168.1.77"}
 NODES.pop(HOSTNAME, -1)
 class ClientSocket:
     def __init__(self, sock=None):
@@ -66,9 +66,8 @@ class ServerSocket:
         self.sock.listen(5)
     
     def accept(self):
-        conn, addr = self.sock.accept()
-        print(f"Connected by : {addr}")
-        self.conn = conn
+        self.conn, self.addr = self.sock.accept()
+        print(f"\nConnected by : {self.addr}")
 
     def send(self, msg):
         totalsent = 0
@@ -89,16 +88,17 @@ class ServerSocket:
                 break
             chunks.append(chunk.decode())
             bytes_recd = bytes_recd + len(chunk)
-        return "".join(chunks)
+        return f"{self.addr}" + "".join(chunks)
 
 def miserver():
-    register = open("register.txt", "a+")
 
     servidor = ServerSocket()
     while True:
         servidor.accept()
         mensaje = servidor.receive()
-        register.write(f"{mensaje}")
+        register = open("register.txt", "a+")
+        register.write(f"{mensaje}\n")
+        register.close()
         servidor.send("Ok")
     
 
@@ -116,14 +116,16 @@ if __name__ == "__main__":
             i = i + 1
         
         while True:
+            option = input("Ingrese una opcion: ")
             try:
-                option = int(input("Ingrese una opcion: "))
+                option = int(option)
                 if option > len(NODES):
                     print("Valor fuera de rango")
                 else:
                     break
             except ValueError:
-                option = print("Ingrese una opcioin valida")
+                if option != "":
+                    print("Ingrese una opcioin valida")
 
         cliente = ClientSocket()
         if cliente.conect(NODES[list(NODES.keys())[option-1]], 65432):
