@@ -2,10 +2,13 @@ import socket
 import time
 import threading
 import sys
+import re
 from getLocalIP import getLocalIP
 
 MSGLEN = 1024
 localIP = getLocalIP()
+masterIP = "0.0.0.0"
+
 
 IP1 = ""
 HOSTNAME = socket.gethostname()
@@ -27,10 +30,21 @@ def electionMaster():
     for ip in candidates:
         cliente = ClientSocket()
         if cliente.conect(ip, 65432):
-            cliente.send("SELECT", "New election")
+            cliente.send("ELECTION", "New election")
             mensaje = cliente.receive()
             if mensaje[1] == "ok":
                 thisNodeIsMaster = False
+        del cliente
+
+    if thisNodeIsMaster:
+        for ip in ipNodes:
+            cliente = ClientSocket()
+            if cliente.conect(ip, 65432):
+                cliente.send("COORDINATOR", "New coordinator")
+                _, timestamp, tipo, mensaje = cliente.receive()
+            
+
+        masterIP = localIP
 
 class ClientSocket:
     def __init__(self, sock=None):
@@ -46,6 +60,8 @@ class ClientSocket:
     
     def conect(self, host, port):
         try:
+            self.addr = host
+            self.port = port
             self.sock.connect((host, port))
             return True
         except ConnectionRefusedError :
@@ -64,7 +80,7 @@ class ClientSocket:
         while totalsent < msglen:
             sent = self.sock.send(msg[totalsent:])
             if sent == 0:
-                raise RuntimeError("Scoket connection broken")
+                raise RuntimeError("Socket connection broken")
             totalsent = totalsent + sent
         self.sock.shutdown(socket.SHUT_WR)
     
@@ -77,7 +93,11 @@ class ClientSocket:
                 break
             chunks.append(chunk.decode())
             bytes_recd = bytes_recd + len(chunk)
-        return "".join(chunks)
+
+        mensaje = f"[{self.addr}]" + "".join(chunks)
+        print(mensaje)
+        elementos =  re.findall(r'\[(.*?)\]', mensaje)
+        return elementos[0], elementos[1], elementos[2], elementos[3]
 
 class ServerSocket:
     def __init__(self, sock=None, host='', port=65432):
@@ -97,18 +117,19 @@ class ServerSocket:
         self.conn, self.addr = self.sock.accept()
         print(f"\nConnected by : {self.addr}")
 
-   def send(self, command, msg):
+    def send(self, command, msg):
         totalsent = 0
         timestamp = time.time()
         timestamp = time.ctime(timestamp)
         msg = f"[{timestamp}][{command}][{msg}]"
+        print(msg)
         msglen = len(msg)
         msg = msg.encode()
 
         while totalsent < msglen:
-            sent = self.sock.send(msg[totalsent:])
+            sent = self.conn.send(msg[totalsent:])
             if sent == 0:
-                raise RuntimeError("Scoket connection broken")
+                raise RuntimeError("Socket connection broken")
             totalsent = totalsent + sent
         self.conn.close()
     
@@ -121,38 +142,56 @@ class ServerSocket:
                 break
             chunks.append(chunk.decode())
             bytes_recd = bytes_recd + len(chunk)
-        return f"{self.addr}" + "".join(chunks)
+
+        mensaje = f"[{self.addr}]" + "".join(chunks)
+        elementos =  re.findall(r'\[(.*?)\]', mensaje)
+        return elementos[0], elementos[1], elementos[2], elementos[3]
 
 def miserver():
 
     servidor = ServerSocket()
     while True:
         servidor.accept()
-        mensaje = servidor.receive()
+        ip, timestamp, tipo, mensaje = servidor.receive()
+        if tipo == "MENSAJE":
+            print(mensaje)
+            servidor.send("MENSAJE", "OK")
+        elif tipo == "ELECTION":
+            electionMaster()
+            servidor.send("OK", "OK")
+        elif tipo == "COORDINATOR":
+            masterIP = ip
+            servidor.send("OK", "ok")
+
         register = open("register.txt", "a+")
-        register.write(f"{mensaje}\n")
+        register.write(f"[{ip}][{timestamp}][{tipo}][{mensaje}]\n")
         register.close()
-        servidor.send("Ok")
     
 
 if __name__ == "__main__":
 
     #Server thread
+
     t1 = threading.Thread(target=miserver)
     t1.start()
 
+    
     while True:
+        ipNodes = []
         i = 1
         print("Enviar mensaje a:")
-        for j in NODES:
-            print(f"{i}) {j}")
-            i = i + 1
+        with open("nodes.txt", "r") as nodes:
+            ipNodes  = [line.strip() for line in nodes.readlines()]
+        
+
+        for ip in ipNodes:
+            print(f"{i}) {ip}")
         
         while True:
             option = input("Ingrese una opcion: ")
             try:
                 option = int(option)
-                if option > len(NODES):
+                if option > len(ipNodes):
                     print("Valor fuera de rango")
                 else:
                     break
@@ -161,15 +200,17 @@ if __name__ == "__main__":
                     print("Ingrese una opcioin valida")
 
         cliente = ClientSocket()
-        if cliente.conect(NODES[list(NODES.keys())[option-1]], 65432):
+
+        if cliente.conect(ipNodes[option - 1], 65432):
             mensaje = input("Ingrese el mensaje: ")
-            hora = time.time()
-            hora = time.ctime(hora)
-            cliente.send(f"[{hora}] " + mensaje)
-            respuesta = cliente.receive()
-            print(f"La respuesta fue: {respuesta}")
+            cliente.send("MENSAJE", mensaje)
+            ip, timestamp, command, contenido = cliente.receive()
+
+            print(f"La respuesta de: {ip} con timestamp: {timestamp} de tipo: {command} es: {mensaje}")
         else:
             print("No se logro conectar con el host")
 
     t1.join()
     register.close()
+    
+    #t1.join()
