@@ -2,12 +2,36 @@ import socket
 import time
 import threading
 import sys
+from getLocalIP import getLocalIP
 
 MSGLEN = 1024
+localIP = getLocalIP()
+
 IP1 = ""
 HOSTNAME = socket.gethostname()
 NODES = {"arch" : "192.168.1.74", "arch-lap" : "192.168.1.69", "pc3" : "192.168.1.77"}
 NODES.pop(HOSTNAME, -1)
+
+def electionMaster():
+
+    thisNodeIsMaster = True
+
+    with open("nodes.txt", "r") as nodes:
+        ipNodes  = [line.strip() for line in nodes.readlines()]
+
+        candidates = []
+        for ip in ipNodes:
+            if ip > localIP:
+                candidates.append(ip)
+    
+    for ip in candidates:
+        cliente = ClientSocket()
+        if cliente.conect(ip, 65432):
+            cliente.send("SELECT", "New election")
+            mensaje = cliente.receive()
+            if mensaje[1] == "ok":
+                thisNodeIsMaster = False
+
 class ClientSocket:
     def __init__(self, sock=None):
         if sock is None:
@@ -29,10 +53,14 @@ class ClientSocket:
             self.sock.close()
             return False
 
-    def send(self, msg):
+    def send(self, command, msg):
+        totalsent = 0
+        timestamp = time.time()
+        timestamp = time.ctime(timestamp)
+        msg = f"[{timestamp}][{command}][{msg}]"
         msglen = len(msg)
         msg = msg.encode()
-        totalsent = 0
+        
         while totalsent < msglen:
             sent = self.sock.send(msg[totalsent:])
             if sent == 0:
@@ -69,11 +97,16 @@ class ServerSocket:
         self.conn, self.addr = self.sock.accept()
         print(f"\nConnected by : {self.addr}")
 
-    def send(self, msg):
+   def send(self, command, msg):
         totalsent = 0
+        timestamp = time.time()
+        timestamp = time.ctime(timestamp)
+        msg = f"[{timestamp}][{command}][{msg}]"
         msglen = len(msg)
+        msg = msg.encode()
+
         while totalsent < msglen:
-            sent = self.conn.send(msg[totalsent:].encode())
+            sent = self.sock.send(msg[totalsent:])
             if sent == 0:
                 raise RuntimeError("Scoket connection broken")
             totalsent = totalsent + sent
