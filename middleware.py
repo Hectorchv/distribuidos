@@ -18,11 +18,11 @@ NODES.pop(HOSTNAME, -1)
 def electionMaster():
 
     thisNodeIsMaster = True
+    candidates = []
 
     with open("nodes.txt", "r") as nodes:
         ipNodes  = [line.strip() for line in nodes.readlines()]
 
-        candidates = []
         for ip in ipNodes:
             if ip > localIP:
                 candidates.append(ip)
@@ -31,19 +31,19 @@ def electionMaster():
         cliente = ClientSocket()
         if cliente.conect(ip, 65432):
             cliente.send("ELECTION", "New election")
-            mensaje = cliente.receive()
+            ip, _, tipo, mensaje = cliente.receive()
+            print(mensaje)
             if mensaje[1] == "ok":
                 thisNodeIsMaster = False
         del cliente
 
     if thisNodeIsMaster:
+        print("Yo soy el nodo maestro")
         for ip in ipNodes:
             cliente = ClientSocket()
             if cliente.conect(ip, 65432):
                 cliente.send("COORDINATOR", "New coordinator")
                 _, timestamp, tipo, mensaje = cliente.receive()
-            
-
         masterIP = localIP
 
 class ClientSocket:
@@ -95,7 +95,6 @@ class ClientSocket:
             bytes_recd = bytes_recd + len(chunk)
 
         mensaje = f"[{self.addr}]" + "".join(chunks)
-        print(mensaje)
         elementos =  re.findall(r'\[(.*?)\]', mensaje)
         return elementos[0], elementos[1], elementos[2], elementos[3]
 
@@ -122,7 +121,6 @@ class ServerSocket:
         timestamp = time.time()
         timestamp = time.ctime(timestamp)
         msg = f"[{timestamp}][{command}][{msg}]"
-        print(msg)
         msglen = len(msg)
         msg = msg.encode()
 
@@ -157,9 +155,11 @@ def miserver():
             print(mensaje)
             servidor.send("MENSAJE", "OK")
         elif tipo == "ELECTION":
+            servidor.send("OK", "ok")
+            print("Nueva eleccion de nodo maestro")
             electionMaster()
-            servidor.send("OK", "OK")
         elif tipo == "COORDINATOR":
+            print(f"Nuevo coordinador con IP: {ip}")
             masterIP = ip
             servidor.send("OK", "ok")
 
@@ -175,7 +175,6 @@ if __name__ == "__main__":
     t1 = threading.Thread(target=miserver)
     t1.start()
 
-    
     while True:
         ipNodes = []
         i = 1
@@ -186,6 +185,7 @@ if __name__ == "__main__":
 
         for ip in ipNodes:
             print(f"{i}) {ip}")
+            i += 1
         
         while True:
             option = input("Ingrese una opcion: ")
@@ -212,5 +212,6 @@ if __name__ == "__main__":
 
     t1.join()
     register.close()
-    
+
+
     #t1.join()
