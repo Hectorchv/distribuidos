@@ -111,10 +111,10 @@ class ServerSocket:
             self.sock = sock
 
         self.sock.bind(('', 65432))
-        self.sock.listen()
+        self.sock.listen(5)
     
     def accept(self):
-        self.conn, self.addr = self.sock.accept(5)
+        self.conn, self.addr = self.sock.accept()
         print(f"\nConnected by : {self.addr}")
 
     def send(self, command, msg):
