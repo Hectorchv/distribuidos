@@ -73,3 +73,7 @@
 [('192.168.1.69', 52010)][Fri Nov 22 00:33:08 2024][COORDINATOR][New coordinator]
 [('192.168.1.71', 47260)][Fri Nov 22 00:37:01 2024][COORDINATOR][New coordinator]
 [('192.168.1.69', 50674)][Fri Nov 22 00:42:05 2024][COORDINATOR][New coordinator]
+[('192.168.1.69', 53980)][Fri Nov 22 00:45:47 2024][ELECTION][New election]
+[('192.168.1.73', 51494)][Fri Nov 22 00:45:47 2024][ELECTION][New election]
+[('192.168.1.71', 57092)][Fri Nov 22 00:45:47 2024][ELECTION][New election]
+[('192.168.1.73', 51504)][Fri Nov 22 00:45:47 2024][ELECTION][New election]

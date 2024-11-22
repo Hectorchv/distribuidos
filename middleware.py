@@ -16,6 +16,7 @@ NODES = {"arch" : "192.168.1.74", "arch-lap" : "192.168.1.69", "pc3" : "192.168.
 NODES.pop(HOSTNAME, -1)
 
 def electionMaster():
+    global masterIP
 
     thisNodeIsMaster = True
     candidates = []
@@ -49,6 +50,7 @@ def electionMaster():
             if cliente.conect(ip, 65432):
                 cliente.send("COORDINATOR", "New coordinator")
                 _, timestamp, tipo, mensaje = cliente.receive()
+        
         masterIP = localIP
 
 class ClientSocket:
@@ -157,6 +159,7 @@ class comServer:
         return elementos[0], elementos[1], elementos[2], elementos[3]
 
 def handleClient(conn, addr):
+    global masterIP
 
     servidor = comServer(conn,addr)
 
