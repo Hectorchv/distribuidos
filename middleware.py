@@ -36,11 +36,13 @@ def electionMaster():
             if cliente.conect(ip, 65432):
                 cliente.send("ELECTION", "New election")
                 ip, _, tipo, mensaje = cliente.receive()
-                print(f"{mensaje == "ok"}")
+                print(f"{mensaje} from: {ip}")
                 if mensaje == "ok":
                     thisNodeIsMaster = False
             del cliente
 
+    print(thisNodeIsMaster)
+    
     if thisNodeIsMaster:
         for ip in ipNodes:
             cliente = ClientSocket()
