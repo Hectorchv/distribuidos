@@ -111,7 +111,7 @@ class ServerSocket:
             self.sock = sock
 
         self.sock.bind(('', 65432))
-        self.sock.listen(5)
+        self.sock.listen()
     
     def accept(self):
         self.conn, self.addr = self.sock.accept(5)
