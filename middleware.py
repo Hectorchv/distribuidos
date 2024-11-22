@@ -28,6 +28,7 @@ def electionMaster():
             if ip > localIP:
                 candidates.append(ip)
     
+    print(candidates)
     for ip in candidates:
         cliente = ClientSocket()
         if cliente.conect(ip, 65432):
