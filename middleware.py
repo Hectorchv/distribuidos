@@ -29,15 +29,17 @@ def electionMaster():
                 candidates.append(ip)
     
     print(candidates)
-    for ip in candidates:
-        cliente = ClientSocket()
-        if cliente.conect(ip, 65432):
-            cliente.send("ELECTION", "New election")
-            ip, _, tipo, mensaje = cliente.receive()
-            print(f"{mensaje} from: {ip}")
-            if mensaje == "ok":
-                thisNodeIsMaster = False
-        del cliente
+
+    if not candidates:
+        for ip in candidates:
+            cliente = ClientSocket()
+            if cliente.conect(ip, 65432):
+                cliente.send("ELECTION", "New election")
+                ip, _, tipo, mensaje = cliente.receive()
+                print(f"{mensaje} from: {ip}")
+                if mensaje == "ok":
+                    thisNodeIsMaster = False
+            del cliente
 
     if thisNodeIsMaster:
         for ip in ipNodes:
@@ -146,27 +148,30 @@ class ServerSocket:
         elementos =  re.findall(r'\[(.*?)\]', mensaje)
         return elementos[0], elementos[1], elementos[2], elementos[3]
 
+def handleClient(servidor):
+    ip, timestamp, tipo, mensaje = servidor.receive()
+    if tipo == "MENSAJE":
+        print(mensaje)
+        servidor.send("MENSAJE", "OK")
+    elif tipo == "ELECTION":
+        servidor.send("OK", "ok")
+        print("Nueva eleccion de nodo maestro")
+        electionMaster()
+    elif tipo == "COORDINATOR":
+        print(f"Nuevo coordinador con IP: {ip}")
+        masterIP = ip
+        servidor.send("OK", "ok")
+
+    register = open("register.txt", "a+")
+    register.write(f"[{ip}][{timestamp}][{tipo}][{mensaje}]\n")
+    register.close()
+
 def miserver():
 
     servidor = ServerSocket()
     while True:
         servidor.accept()
-        ip, timestamp, tipo, mensaje = servidor.receive()
-        if tipo == "MENSAJE":
-            print(mensaje)
-            servidor.send("MENSAJE", "OK")
-        elif tipo == "ELECTION":
-            servidor.send("OK", "ok")
-            print("Nueva eleccion de nodo maestro")
-            electionMaster()
-        elif tipo == "COORDINATOR":
-            print(f"Nuevo coordinador con IP: {ip}")
-            masterIP = ip
-            servidor.send("OK", "ok")
-
-        register = open("register.txt", "a+")
-        register.write(f"[{ip}][{timestamp}][{tipo}][{mensaje}]\n")
-        register.close()
+        hilo = threading.Thread(target=handleClient, args=servidor)
     
 
 if __name__ == "__main__":
