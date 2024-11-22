@@ -36,7 +36,7 @@ def electionMaster():
             if cliente.conect(ip, 65432):
                 cliente.send("ELECTION", "New election")
                 ip, _, tipo, mensaje = cliente.receive()
-                print(f"{mensaje} from: {ip}")
+                print(f"{mensaje == "ok"}")
                 if mensaje == "ok":
                     thisNodeIsMaster = False
             del cliente
@@ -206,17 +206,20 @@ if __name__ == "__main__":
             i += 1
         
         print(f"{i}) Nuevo coordinador")
+        print(f"{i+1}) Nodo maestro")
         
         while True:
             option = input("Ingrese una opcion: ")
             try:
                 option = int(option)
 
-                if option > len(ipNodes) + 1:
+                if option > len(ipNodes) + 2:
                     print("Valor fuera de rango")
 
                 elif option == i:
                     electionMaster()
+                elif option == i+1:
+                    print(masterIP)
                 else:
                     cliente = ClientSocket()
 
