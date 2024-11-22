@@ -116,8 +116,14 @@ class ServerSocket:
         self.sock.listen(5)
     
     def accept(self):
-        self.conn, self.addr = self.sock.accept()
-        print(f"\nConnected by : {self.addr}")
+        conn, addr = self.sock.accept()
+        print(f"\nConnected by : {addr}")
+        return conn, addr
+
+class comServer:
+    def __init__(self, conn, addr):
+        self.conn = conn
+        self.addr = addr
 
     def send(self, command, msg):
         totalsent = 0
@@ -148,7 +154,10 @@ class ServerSocket:
         elementos =  re.findall(r'\[(.*?)\]', mensaje)
         return elementos[0], elementos[1], elementos[2], elementos[3]
 
-def handleClient(servidor):
+def handleClient(conn, addr):
+
+    servidor = comServer(conn,addr)
+
     ip, timestamp, tipo, mensaje = servidor.receive()
     if tipo == "MENSAJE":
         print(mensaje)
@@ -170,8 +179,9 @@ def miserver():
 
     servidor = ServerSocket()
     while True:
-        servidor.accept()
-        hilo = threading.Thread(target=handleClient, args=servidor)
+        conn, addr = servidor.accept()
+        hilo = threading.Thread(target=handleClient, args=(conn,addr))
+        hilo.start()
     
 
 if __name__ == "__main__":
@@ -215,7 +225,7 @@ if __name__ == "__main__":
                         cliente.send("MENSAJE", mensaje)
                         ip, timestamp, command, contenido = cliente.receive()
 
-                        print(f"La respuesta de: {ip} con timestamp: {timestamp} de tipo: {command} es: {mensaje}")
+                        print(f"La respuesta de: {ip} con timestamp: {timestamp} de tipo: {command} es: {contenido}")
                     else:
                         print("No se logro conectar con el host")
 
