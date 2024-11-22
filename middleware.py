@@ -30,7 +30,7 @@ def electionMaster():
     
     print(candidates)
 
-    if not candidates:
+    if candidates:
         for ip in candidates:
             cliente = ClientSocket()
             if cliente.conect(ip, 65432):
@@ -42,7 +42,7 @@ def electionMaster():
             del cliente
 
     print(thisNodeIsMaster)
-    
+
     if thisNodeIsMaster:
         for ip in ipNodes:
             cliente = ClientSocket()
