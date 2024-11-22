@@ -22,6 +22,7 @@ def electionMaster():
 
     with open("nodes.txt", "r") as nodes:
         ipNodes  = [line.strip() for line in nodes.readlines()]
+        ipNodes.remove(localIP)
 
         for ip in ipNodes:
             if ip > localIP:
@@ -33,7 +34,7 @@ def electionMaster():
             cliente.send("ELECTION", "New election")
             ip, _, tipo, mensaje = cliente.receive()
             print(mensaje)
-            if mensaje[1] == "ok":
+            if mensaje == "ok":
                 thisNodeIsMaster = False
         del cliente
 
@@ -41,6 +42,7 @@ def electionMaster():
         print("Yo soy el nodo maestro")
         for ip in ipNodes:
             cliente = ClientSocket()
+            print(ip)
             if cliente.conect(ip, 65432):
                 cliente.send("COORDINATOR", "New coordinator")
                 _, timestamp, tipo, mensaje = cliente.receive()
@@ -175,6 +177,10 @@ if __name__ == "__main__":
     t1 = threading.Thread(target=miserver)
     t1.start()
 
+    #electionMaster()
+    #t1.join()
+
+    
     while True:
         ipNodes = []
         i = 1
@@ -212,6 +218,7 @@ if __name__ == "__main__":
 
     t1.join()
     register.close()
+    
 
 
     #t1.join()
