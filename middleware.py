@@ -39,7 +39,6 @@ def electionMaster():
         del cliente
 
     if thisNodeIsMaster:
-        print("Yo soy el nodo maestro")
         for ip in ipNodes:
             cliente = ClientSocket()
             print(ip)
@@ -115,7 +114,7 @@ class ServerSocket:
         self.sock.listen(5)
     
     def accept(self):
-        self.conn, self.addr = self.sock.accept()
+        self.conn, self.addr = self.sock.accept(5)
         print(f"\nConnected by : {self.addr}")
 
     def send(self, command, msg):
@@ -177,13 +176,11 @@ if __name__ == "__main__":
     t1 = threading.Thread(target=miserver)
     t1.start()
 
-    #electionMaster()
-    #t1.join()
-
-    
     while True:
+
         ipNodes = []
         i = 1
+
         print("Enviar mensaje a:")
         with open("nodes.txt", "r") as nodes:
             ipNodes  = [line.strip() for line in nodes.readlines()]
@@ -193,32 +190,35 @@ if __name__ == "__main__":
             print(f"{i}) {ip}")
             i += 1
         
+        print(f"{i}) Nuevo coordinador")
+        
         while True:
             option = input("Ingrese una opcion: ")
             try:
                 option = int(option)
-                if option > len(ipNodes):
+
+                if option > len(ipNodes) + 1:
                     print("Valor fuera de rango")
+
+                elif option == i:
+                    electionMaster()
                 else:
+                    cliente = ClientSocket()
+
+                    if cliente.conect(ipNodes[option - 1], 65432):
+                        mensaje = input("Ingrese el mensaje: ")
+                        cliente.send("MENSAJE", mensaje)
+                        ip, timestamp, command, contenido = cliente.receive()
+
+                        print(f"La respuesta de: {ip} con timestamp: {timestamp} de tipo: {command} es: {mensaje}")
+                    else:
+                        print("No se logro conectar con el host")
+
                     break
             except ValueError:
                 if option != "":
                     print("Ingrese una opcioin valida")
 
-        cliente = ClientSocket()
-
-        if cliente.conect(ipNodes[option - 1], 65432):
-            mensaje = input("Ingrese el mensaje: ")
-            cliente.send("MENSAJE", mensaje)
-            ip, timestamp, command, contenido = cliente.receive()
-
-            print(f"La respuesta de: {ip} con timestamp: {timestamp} de tipo: {command} es: {mensaje}")
-        else:
-            print("No se logro conectar con el host")
-
     t1.join()
     register.close()
-    
-
-
     #t1.join()
